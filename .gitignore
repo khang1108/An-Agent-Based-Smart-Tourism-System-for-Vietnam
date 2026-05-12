@@ -6,3 +6,8 @@ slides/
 .vscode/
 PA_Decomposition.md
 submit/
+.secrets/
+.claude/
+.venv-google-sheets/
+__pycache__/
+*.py[cod]
