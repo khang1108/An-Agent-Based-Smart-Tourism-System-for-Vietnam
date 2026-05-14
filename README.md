@@ -468,4 +468,34 @@ flowchart TD
 5. Start with mocks, then replace with real AI. The team should demo vertical slices before building complex agents deeply.
 6. Keep workflows explicit. LangGraph nodes should map clearly to retrieval, generation, validation, and fallback steps.
 
+## Backend API Sprint 1
+
+The backend branch adds a FastAPI service with health, places, feed, storyline, captures, and logs endpoints.
+
+### Local Setup
+
+```bash
+cp .env.example .env
+py -m pip install fastapi uvicorn[standard] httpx python-dotenv pydantic pydantic-settings
+py -m uvicorn app.main:app --reload
+```
+
+Server runs at `http://localhost:8000`, and Swagger API docs are available at `http://localhost:8000/docs`.
+
+### Smoke Test Endpoints
+
+```text
+GET  /api/v1/health
+GET  /api/v1/places
+GET  /api/v1/places?category=temple
+GET  /api/v1/feed
+GET  /api/v1/storyline/next-task?user_id=user-001
+POST /api/v1/captures
+```
+
+Notes from the backend branch:
+
+- AI Core is mocked by default with `AI_CORE_USE_MOCK=true`.
+- Captures are stored in memory for Sprint 1.
+- CORS is open for development and should be restricted before production.
 
