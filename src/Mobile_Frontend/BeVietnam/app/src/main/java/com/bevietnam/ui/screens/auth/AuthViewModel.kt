@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import com.bevietnam.core.domain.usecase.LoginUseCase
 import com.bevietnam.core.domain.usecase.RegisterUseCase
-import com.bevietnam.core.session.SessionManager
+import com.bevietnam.core.domain.session.SessionManager
 
 enum class AuthTab { LOGIN, REGISTER }
 

@@ -2,7 +2,7 @@ package com.bevietnam.ui.screens.explore
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bevietnam.core.domain.repository.IPlaceRepository
+import com.bevietnam.core.domain.usecase.GetPlacesUseCase
 import com.bevietnam.core.model.Place
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -12,8 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-// ── UI State ──────────────────────────────────────────────────────────────────
 
 sealed class ExploreUiState {
     object Loading : ExploreUiState()
@@ -29,11 +27,9 @@ sealed class ExploreUiState {
 
 val categories = listOf("Tất cả", "Hành trình", "Lịch sử", "Địa điểm", "Văn hóa", "Thiên nhiên", "Nghỉ dưỡng")
 
-// ── ViewModel ─────────────────────────────────────────────────────────────────
-
 @HiltViewModel
 class ExploreViewModel @Inject constructor(
-    private val repository: IPlaceRepository
+    private val getPlacesUseCase: GetPlacesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ExploreUiState>(ExploreUiState.Loading)
@@ -48,11 +44,12 @@ class ExploreViewModel @Inject constructor(
             _uiState.value = ExploreUiState.Loading
             delay(1200) // Simulate network delay
             try {
-                val places = repository.getPlaces().first()
-                _uiState.value = if (places.isEmpty()) {
-                    ExploreUiState.Empty
-                } else {
-                    ExploreUiState.Success(places = places, filteredPlaces = places)
+                getPlacesUseCase().collect { places ->
+                    _uiState.value = if (places.isEmpty()) {
+                        ExploreUiState.Empty
+                    } else {
+                        ExploreUiState.Success(places = places, filteredPlaces = places)
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.value = ExploreUiState.Error(e.message ?: "Unknown error")
@@ -67,10 +64,7 @@ class ExploreViewModel @Inject constructor(
         } else {
             current.places.filter { it.category.contains(category, ignoreCase = true) }
         }
-        _uiState.value = current.copy(
-            selectedCategory = category,
-            filteredPlaces = filtered
-        )
+        _uiState.updateSuccessState(category = category, filtered = filtered)
     }
 
     fun onSearchQueryChanged(query: String) {
@@ -84,8 +78,18 @@ class ExploreViewModel @Inject constructor(
                         it.category.contains(query, ignoreCase = true)
             }
         }
-        _uiState.value = current.copy(
-            searchQuery = query,
+        _uiState.updateSuccessState(query = query, filtered = filtered)
+    }
+
+    private fun MutableStateFlow<ExploreUiState>.updateSuccessState(
+        category: String? = null,
+        query: String? = null,
+        filtered: List<Place>
+    ) {
+        val current = value as? ExploreUiState.Success ?: return
+        value = current.copy(
+            selectedCategory = category ?: current.selectedCategory,
+            searchQuery = query ?: current.searchQuery,
             filteredPlaces = filtered
         )
     }

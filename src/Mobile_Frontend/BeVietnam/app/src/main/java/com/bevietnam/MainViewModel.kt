@@ -1,7 +1,7 @@
 package com.bevietnam
 
 import androidx.lifecycle.ViewModel
-import com.bevietnam.core.session.SessionManager
+import com.bevietnam.core.domain.session.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject

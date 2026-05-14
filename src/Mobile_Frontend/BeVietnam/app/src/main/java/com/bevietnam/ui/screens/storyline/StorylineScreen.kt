@@ -28,13 +28,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.bevietnam.core.data.mock.MockTaskRepository
 import com.bevietnam.core.model.Task
 import com.bevietnam.core.model.TaskDifficulty
 import com.bevietnam.ui.theme.BeVietnamTheme
 
 // ── Color Tokens ──────────────────────────────────────────────────────────────
-
 private val PrimaryRed = Color(0xFFC0392B)
 private val Background = Color(0xFFFAF5E4)
 private val CardBackground = Color(0xFFFFFFFF)
@@ -56,71 +54,41 @@ fun StorylineScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    StorylineScreenContent(
+        uiState = uiState,
+        onRetry = viewModel::loadTasks,
+        onTaskClick = onTaskClick,
+        onTaskCompleted = viewModel::onTaskCompleted
+    )
+}
+
+@Composable
+fun StorylineScreenContent(
+    uiState: StorylineUiState,
+    onRetry: () -> Unit,
+    onTaskClick: (Task) -> Unit,
+    onTaskCompleted: (String) -> Unit
+) {
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Background
     ) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            StorylineTopBar()
-
-            when (val state = uiState) {
-                is StorylineUiState.Loading -> StorylineLoadingState()
-                is StorylineUiState.Empty -> StorylineEmptyState(
-                    onRetry = { viewModel.loadTasks() }
-                )
-                is StorylineUiState.Error -> StorylineEmptyState(
-                    message = state.message,
-                    onRetry = { viewModel.loadTasks() }
-                )
-                is StorylineUiState.Success -> StorylineSuccessContent(
-                    state = state,
-                    onTaskClick = onTaskClick,
-                    onTaskCompleted = viewModel::onTaskCompleted
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StorylineTopBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Background)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column {
-            Text(
-                text = "Hành Trình",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
+        when (uiState) {
+            is StorylineUiState.Loading -> StorylineLoadingState()
+            is StorylineUiState.Empty -> StorylineEmptyState(onRetry = onRetry)
+            is StorylineUiState.Error -> StorylineEmptyState(
+                message = uiState.message,
+                onRetry = onRetry
             )
-            Text(
-                text = "Khám phá văn hóa Việt Nam",
-                fontSize = 13.sp,
-                color = TextSecondary
-            )
-        }
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(PrimaryRed),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.EmojiEvents,
-                contentDescription = "Achievements",
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
+            is StorylineUiState.Success -> StorylineSuccessContent(
+                state = uiState,
+                onTaskClick = onTaskClick,
+                onTaskCompleted = onTaskCompleted
             )
         }
     }
 }
+
 
 @Composable
 private fun StorylineSuccessContent(
@@ -569,9 +537,47 @@ private fun StorylineEmptyState(
 
 @Preview(showBackground = true)
 @Composable
-fun StorylineScreenPreview() {
+fun StorylineScreenSuccessPreview() {
+    val mockTasks = listOf(
+        Task(
+            id = "1",
+            title = "Thử thách Phở",
+            description = "Tìm và thưởng thức một bát phở truyền thống.",
+            culturalExplanation = "Phở là món ăn quốc hồn quốc túy của Việt Nam.",
+            completionRequirement = "Chụp ảnh bát phở của bạn.",
+            difficulty = TaskDifficulty.EASY,
+            isCompleted = true
+        ),
+        Task(
+            id = "2",
+            title = "Khám phá Văn Miếu",
+            description = "Ghé thăm trường đại học đầu tiên của Việt Nam.",
+            culturalExplanation = "Nơi thờ Khổng Tử và các bậc hiền triết.",
+            completionRequirement = "Check-in tại cổng Văn Miếu.",
+            difficulty = TaskDifficulty.MEDIUM,
+            isCompleted = false
+        )
+    )
     BeVietnamTheme {
-        StorylineScreen()
+        StorylineScreenContent(
+            uiState = StorylineUiState.Success(tasks = mockTasks, nextTask = mockTasks[1]),
+            onRetry = {},
+            onTaskClick = {},
+            onTaskCompleted = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun StorylineScreenLoadingPreview() {
+    BeVietnamTheme {
+        StorylineScreenContent(
+            uiState = StorylineUiState.Loading,
+            onRetry = {},
+            onTaskClick = {},
+            onTaskCompleted = {}
+        )
     }
 }
 

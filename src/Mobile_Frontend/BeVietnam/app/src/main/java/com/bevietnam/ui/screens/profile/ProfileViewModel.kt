@@ -6,7 +6,7 @@ import com.bevietnam.core.domain.usecase.GetUserUseCase
 import com.bevietnam.core.domain.usecase.UpdateUserUseCase
 import com.bevietnam.core.model.Gender
 import com.bevietnam.core.model.User
-import com.bevietnam.core.session.SessionManager
+import com.bevietnam.core.domain.session.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

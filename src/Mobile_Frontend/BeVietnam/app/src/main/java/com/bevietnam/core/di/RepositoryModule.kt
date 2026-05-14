@@ -4,10 +4,12 @@ import com.bevietnam.core.data.mock.MockPlaceRepository
 import com.bevietnam.core.data.mock.MockUserRepository
 import com.bevietnam.core.data.mock.MockTaskRepository
 import com.bevietnam.core.data.mock.MockAuthRepository
+import com.bevietnam.core.data.mock.MockFeedRepository
 import com.bevietnam.core.domain.repository.IPlaceRepository
 import com.bevietnam.core.domain.repository.IAuthRepository
 import com.bevietnam.core.domain.repository.IUserRepository
 import com.bevietnam.core.domain.repository.ITaskRepository
+import com.bevietnam.core.domain.repository.IFeedRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -39,4 +41,10 @@ abstract class RepositoryModule {
     abstract fun bindUserRepository(
         mockUserRepository: MockUserRepository
     ): IUserRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFeedRepository(
+        mockFeedRepository: MockFeedRepository
+    ): IFeedRepository
 }
