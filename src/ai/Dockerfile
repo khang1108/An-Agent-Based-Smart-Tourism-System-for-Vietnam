@@ -6,9 +6,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Install dependencies first (cached layer)
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
+# Copy AI source code
 COPY . ./ai
 
 ENV PYTHONPATH=/app

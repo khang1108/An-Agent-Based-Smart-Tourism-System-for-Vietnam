@@ -1,25 +1,52 @@
 """
-AI Core Client — Sprint 0 Contract
-Backend gọi AI Core qua HTTP. Không implement logic AI ở đây.
+AI Core Client — Backend → AI Core HTTP Communication.
+
+The backend calls AI Core via HTTP to get AI-generated content.
+This client handles:
+  - Mock mode (AI_CORE_USE_MOCK=true): returns pre-baked responses
+  - Real mode: calls AI Core service via httpx
+  - Fallback: returns safe defaults when AI Core is unreachable
 """
+
 import httpx
+import logging
 from app.core.config import settings
 from typing import Any, Dict, Optional
 
-# ── Mock responses (dùng khi AI_CORE_USE_MOCK=True) ──────────────────────────
+logger = logging.getLogger(__name__)
+
+# ── Mock responses (used when AI_CORE_USE_MOCK=True) ──────────────────────────
 _MOCK_RESPONSES: Dict[str, Any] = {
     "generate_task": {
-        "task_id": "mock-task-001",
-        "title": "Visit Văn Miếu",
-        "description": "Explore the Temple of Literature, one of Hanoi's most iconic landmarks.",
-        "score": 0.92,
+        "status": "ok",
+        "data": {
+            "quest_id": "quest-hue-imperial",
+            "task_id": "mock-task-001",
+            "step_index": 1,
+            "title": "Khám phá Ngọ Môn — Cổng vào Hoàng thành",
+            "description": "Tìm và chụp ảnh Ngọ Môn — cổng chính phía nam của Hoàng thành Huế.",
+            "cultural_explanation": "Ngọ Môn là nơi diễn ra các nghi lễ quan trọng nhất của triều Nguyễn.",
+            "completion_requirement": "Chụp một ảnh Ngọ Môn với metadata vị trí.",
+            "unlock_condition": {"type": "capture_required", "requires_photo": True, "requires_location": True},
+            "next_task_hint": "Đằng sau cổng này là nơi vua thiết triều...",
+            "difficulty": "easy",
+            "reason_codes": ["culture", "history", "architecture"],
+        },
+        "metadata": {"ai_generated": False, "fallback": True},
+    },
+    "quest_chain": {
+        "status": "ok",
+        "quest_id": "quest-hue-imperial",
+        "place_name": "Kinh thành Huế",
+        "total_tasks": 5,
+        "tasks": [],  # Will be populated from AI Core
     },
     "explain_recommendation": {
         "explanation": "Đây là mock explanation từ AI Core.",
     },
 }
 
-# ── Fallback response khi AI Core không trả lời ───────────────────────────────
+# ── Fallback response when AI Core is unreachable ─────────────────────────────
 _FALLBACK: Dict[str, Any] = {
     "error": "AI Core unavailable",
     "fallback": True,
@@ -28,22 +55,24 @@ _FALLBACK: Dict[str, Any] = {
 
 class AICoreClient:
     """
-    Contract với AI Core service.
+    HTTP client for communicating with the AI Core service.
 
-    Endpoints đã biết:
-      POST /generate-task      → tạo task gợi ý cho user
-      POST /explain-recommendation → giải thích recommendation
+    Endpoints:
+      POST /generate-task          → Generate next cultural task
+      GET  /quest-chain            → Get full quest chain for UI
+      POST /explain-recommendation → Explain recommendation
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.base_url = settings.AI_CORE_BASE_URL
         self.timeout = settings.AI_CORE_TIMEOUT
         self.use_mock = settings.AI_CORE_USE_MOCK
 
     async def _post(self, endpoint: str, payload: Dict) -> Dict:
-        """Gửi POST request tới AI Core, fallback nếu lỗi."""
+        """Send POST request to AI Core, fallback if error."""
         if self.use_mock:
             key = endpoint.lstrip("/").replace("-", "_")
+            logger.info("AI Core mock mode: returning mock for '%s'", key)
             return _MOCK_RESPONSES.get(key, _FALLBACK)
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -52,18 +81,55 @@ class AICoreClient:
                 )
                 response.raise_for_status()
                 return response.json()
-        except (httpx.RequestError, httpx.HTTPStatusError):
+        except (httpx.RequestError, httpx.HTTPStatusError) as exc:
+            logger.warning("AI Core POST %s failed: %s", endpoint, exc)
+            return _FALLBACK
+
+    async def _get(self, endpoint: str, params: Dict | None = None) -> Dict:
+        """Send GET request to AI Core, fallback if error."""
+        if self.use_mock:
+            key = endpoint.lstrip("/").replace("-", "_")
+            logger.info("AI Core mock mode: returning mock for '%s'", key)
+            return _MOCK_RESPONSES.get(key, _FALLBACK)
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(
+                    f"{self.base_url}{endpoint}", params=params
+                )
+                response.raise_for_status()
+                return response.json()
+        except (httpx.RequestError, httpx.HTTPStatusError) as exc:
+            logger.warning("AI Core GET %s failed: %s", endpoint, exc)
             return _FALLBACK
 
     # ── Public methods ────────────────────────────────────────────────────────
 
-    async def generate_task(self, user_id: str, context: Optional[Dict] = None) -> Dict:
-        """Gọi AI Core để sinh task gợi ý tiếp theo cho user."""
-        return await self._post("/generate-task", {"user_id": user_id, "context": context or {}})
+    async def generate_task(
+        self,
+        user_id: str,
+        context: Optional[Dict] = None,
+    ) -> Dict:
+        """Call AI Core to generate the next cultural task."""
+        payload = {"user_id": user_id, **(context or {})}
+        return await self._post("/generate-task", payload)
 
-    async def explain_recommendation(self, place_id: str, user_id: str) -> Dict:
-        """Gọi AI Core để lấy giải thích tại sao gợi ý địa điểm này."""
-        return await self._post("/explain-recommendation", {"place_id": place_id, "user_id": user_id})
+    async def get_quest_chain(
+        self,
+        quest_id: str = "quest-hue-imperial",
+    ) -> Dict:
+        """Call AI Core to get the full quest chain for UI rendering."""
+        return await self._get("/quest-chain", {"quest_id": quest_id})
+
+    async def explain_recommendation(
+        self,
+        place_id: str,
+        user_id: str,
+    ) -> Dict:
+        """Call AI Core for recommendation explanation."""
+        return await self._post(
+            "/explain-recommendation",
+            {"place_id": place_id, "user_id": user_id},
+        )
 
 
 # Singleton instance
