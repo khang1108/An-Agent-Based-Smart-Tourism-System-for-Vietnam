@@ -4,9 +4,9 @@ data class FeedItem(
     val id: String,
     val userId: String,
     val userName: String,
-    val userAvatarUrl: String,
+    val userAvatarUrl: Any, // -> để dùng được drawableee
     val content: String,
-    val imageUrl: String? = null,
+    val imageUrl: Any? = null, 
     val timestamp: String,
     val likesCount: Int = 0,
     val commentsCount: Int = 0,
