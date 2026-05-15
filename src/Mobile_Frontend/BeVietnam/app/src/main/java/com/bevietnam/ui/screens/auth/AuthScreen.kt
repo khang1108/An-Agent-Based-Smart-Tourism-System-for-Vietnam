@@ -51,7 +51,8 @@ import com.bevietnam.ui.components.GenderSelector
 import com.bevietnam.ui.components.PrimaryLoadingButton
 import java.time.LocalDate
 import java.util.Calendar
-
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 @Composable
 fun AuthScreen(
     onNavigateToProfile: (String) -> Unit,
@@ -84,7 +85,12 @@ fun AuthScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Spacer(Modifier.height(40.dp))
-
+            Image(
+                painter=painterResource(id = R.drawable.smarttravellogo),
+                contentDescription = null,
+                modifier = Modifier.size(100.dp)
+            )
+            Spacer(Modifier.height(16.dp))
             Text(
                 text = "bevietnam",
                 style = MaterialTheme.typography.headlineLarge.copy(
@@ -95,7 +101,7 @@ fun AuthScreen(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.app_tagline),
+                text = "Du lịch thông minh",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
